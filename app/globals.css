@@ -2,12 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Glassmorphism Effects */
+/* Performance Optimizations */
+@layer base {
+  /* Enable GPU acceleration for transforms */
+  * {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* Smooth text rendering */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Glassmorphism Effects with Performance Hints */
 @layer components {
   .glass-calculator,
   .glass-display,
   .glass-button {
     position: relative;
+
+    /* Performance containment */
+    contain: layout style paint;
+
+    /* GPU acceleration hint */
+    will-change: transform;
 
     /* Subtle inner shadow for depth */
     box-shadow:
@@ -22,12 +45,6 @@
       0 8px 32px rgba(0, 0, 0, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.1),
       0 0 0 1px rgba(255, 255, 255, 0.05);
-  }
-
-  /* Smooth text rendering */
-  * {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Prevent text selection on calculator */

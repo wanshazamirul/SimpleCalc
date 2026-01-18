@@ -1,33 +1,51 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { CalculatorButtonProps } from '@/types/calculator';
+import { CalculatorButtonProps, ButtonType } from '@/types/calculator';
 import { cn } from '@/lib/utils';
+import { memo, useMemo } from 'react';
 
-export const CalculatorButton = ({
+const buttonStyleCache = new Map<ButtonType, string>();
+
+export const CalculatorButton = memo(({
   value,
   type,
   onClick,
   className
 }: CalculatorButtonProps) => {
-  const getButtonStyle = () => {
+  // Memoize button style computation
+  const buttonStyle = useMemo(() => {
+    if (buttonStyleCache.has(type)) {
+      return buttonStyleCache.get(type)!;
+    }
+
+    let style: string;
     switch (type) {
       case 'operator':
-        return 'text-neon-blue dark:text-neon-blue text-frosty-blue font-semibold';
+        style = 'text-neon-blue dark:text-neon-blue text-frosty-blue font-semibold';
+        break;
       case 'equals':
-        return 'bg-gradient-to-br from-neon-blue to-neon-purple dark:from-neon-blue dark:to-neon-purple from-frosty-blue to-frosty-purple text-white font-bold';
+        style = 'bg-gradient-to-br from-neon-blue to-neon-purple dark:from-neon-blue dark:to-neon-purple from-frosty-blue to-frosty-purple text-white font-bold';
+        break;
       case 'clear':
       case 'backspace':
-        return 'text-red-400 dark:text-red-400 text-red-500 font-semibold';
+        style = 'text-red-400 dark:text-red-400 text-red-500 font-semibold';
+        break;
       case 'decimal':
       default:
-        return 'text-white dark:text-white text-gray-700';
+        style = 'text-white dark:text-white text-gray-700';
     }
-  };
+
+    buttonStyleCache.set(type, style);
+    return style;
+  }, [type]);
+
+  // Memoize click handler
+  const handleClick = useMemo(() => () => onClick(value), [onClick, value]);
 
   return (
     <motion.button
-      onClick={() => onClick(value)}
+      onClick={handleClick}
       className={cn(
         // Glassmorphism base styles
         'glass-button',
@@ -40,15 +58,19 @@ export const CalculatorButton = ({
         'text-2xl md:text-3xl',
         'font-medium',
         'shadow-lg',
-        'transition-all duration-300',
+        'will-change-transform',
         // Button type specific styles
-        getButtonStyle(),
+        buttonStyle,
         // Background based on theme
         'bg-white/10 dark:bg-white/10 bg-white/50',
         // Hover effects
         'hover:bg-white/20 dark:hover:bg-white/20 hover:bg-white/70',
         className
       )}
+      style={{
+        transform: 'translateZ(0)',
+        WebkitTransform: 'translateZ(0)'
+      }}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       transition={{
@@ -64,4 +86,6 @@ export const CalculatorButton = ({
       <span className="relative z-10">{value}</span>
     </motion.button>
   );
-};
+});
+
+CalculatorButton.displayName = 'CalculatorButton';

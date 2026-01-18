@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalculatorDisplay } from './display';
 import { ButtonGrid } from './button-grid';
@@ -8,12 +8,13 @@ import { CalculatorLogic } from '@/lib/calculator-logic';
 import { ButtonType, CalculatorTheme } from '@/types/calculator';
 import { Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { memo } from 'react';
 
 interface CalculatorProps {
   initialTheme?: CalculatorTheme;
 }
 
-export const Calculator = ({ initialTheme = 'dark' }: CalculatorProps) => {
+export const Calculator = memo(({ initialTheme = 'dark' }: CalculatorProps) => {
   const [calculator] = useState(() => new CalculatorLogic());
   const [currentValue, setCurrentValue] = useState('0');
   const [previousValue, setPreviousValue] = useState('');
@@ -46,7 +47,7 @@ export const Calculator = ({ initialTheme = 'dark' }: CalculatorProps) => {
         break;
     }
 
-    // Update state
+    // Batch state updates to prevent multiple re-renders
     const newState = calculator.getState();
     setCurrentValue(newState.currentValue);
     setPreviousValue(newState.previousValue);
@@ -84,65 +85,115 @@ export const Calculator = ({ initialTheme = 'dark' }: CalculatorProps) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleButtonClick]);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
+  }, []);
+
+  // Memoize calculator container props to prevent unnecessary re-renders
+  const calculatorContainerProps = useMemo(() => ({
+    className: cn(
+      'relative z-10 w-full max-w-[420px]',
+      'glass-calculator',
+      'backdrop-blur-xl',
+      'bg-white/10 dark:bg-white/10 bg-white/25',
+      'border border-white/20 dark:border-white/20 border-gray-300/30',
+      'rounded-3xl',
+      'p-6 md:p-8',
+      'shadow-2xl',
+      'transition-all duration-500',
+      'will-change-transform',
+      'contain: layout style paint'
+    ),
+    style: {
+      transform: 'translateZ(0)',
+      WebkitTransform: 'translateZ(0)'
+    }
+  }), []);
+
+  // Memoize display props
+  const displayProps = useMemo(() => ({
+    currentValue,
+    previousValue,
+    operation
+  }), [currentValue, previousValue, operation]);
+
+  // Memoize button grid props
+  const buttonGridProps = useMemo(() => ({
+    onButtonClick: handleButtonClick,
+    theme
+  }), [handleButtonClick, theme]);
 
   return (
     <div className={cn(
       'relative min-h-screen flex items-center justify-center p-4',
       'transition-colors duration-500',
+      'overflow-hidden',
       theme === 'dark'
         ? 'bg-gradient-dark'
         : 'bg-gradient-light'
     )}>
-      {/* Animated background orbs */}
+      {/* Animated background orbs - Optimized with reduced blur and GPU hints */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className={cn(
-            'absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-[80px]',
+            'absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-[60px]',
             'opacity-30',
+            'will-change-transform',
             theme === 'dark' ? 'bg-neon-purple' : 'bg-frosty-purple'
           )}
+          style={{
+            transform: 'translate3d(0, 0, 0)',
+            WebkitTransform: 'translate3d(0, 0, 0)'
+          }}
           animate={{
-            scale: [1, 1.2, 1],
-            x: [0, 50, 0],
-            y: [0, 30, 0],
+            scale: [1, 1.15, 1],
+            x: [0, 40, 0],
+            y: [0, 25, 0],
           }}
           transition={{
-            duration: 8,
+            duration: 10,
             repeat: Infinity,
             ease: "easeInOut"
           }}
         />
         <motion.div
           className={cn(
-            'absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-[80px]',
+            'absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-[60px]',
             'opacity-30',
+            'will-change-transform',
             theme === 'dark' ? 'bg-neon-blue' : 'bg-frosty-blue'
           )}
+          style={{
+            transform: 'translate3d(0, 0, 0)',
+            WebkitTransform: 'translate3d(0, 0, 0)'
+          }}
           animate={{
-            scale: [1.2, 1, 1.2],
-            x: [0, -50, 0],
-            y: [0, -30, 0],
+            scale: [1.15, 1, 1.15],
+            x: [0, -40, 0],
+            y: [0, -25, 0],
           }}
           transition={{
-            duration: 8,
+            duration: 10,
             repeat: Infinity,
             ease: "easeInOut"
           }}
         />
         <motion.div
           className={cn(
-            'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-[80px]',
+            'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-[50px]',
             'opacity-20',
+            'will-change-transform',
             theme === 'dark' ? 'bg-pink-500' : 'bg-pink-300'
           )}
+          style={{
+            transform: 'translate3d(0, 0, 0)',
+            WebkitTransform: 'translate3d(0, 0, 0)'
+          }}
           animate={{
-            scale: [1, 1.3, 1],
+            scale: [1, 1.2, 1],
           }}
           transition={{
-            duration: 6,
+            duration: 8,
             repeat: Infinity,
             ease: "easeInOut"
           }}
@@ -198,17 +249,7 @@ export const Calculator = ({ initialTheme = 'dark' }: CalculatorProps) => {
 
       {/* Calculator */}
       <motion.div
-        className={cn(
-          'relative z-10 w-full max-w-[420px]',
-          'glass-calculator',
-          'backdrop-blur-xl',
-          'bg-white/10 dark:bg-white/10 bg-white/25',
-          'border border-white/20 dark:border-white/20 border-gray-300/30',
-          'rounded-3xl',
-          'p-6 md:p-8',
-          'shadow-2xl',
-          'transition-all duration-500'
-        )}
+        {...calculatorContainerProps}
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{
@@ -217,13 +258,11 @@ export const Calculator = ({ initialTheme = 'dark' }: CalculatorProps) => {
           stiffness: 200
         }}
       >
-        <CalculatorDisplay
-          currentValue={currentValue}
-          previousValue={previousValue}
-          operation={operation}
-        />
-        <ButtonGrid onButtonClick={handleButtonClick} theme={theme} />
+        <CalculatorDisplay {...displayProps} />
+        <ButtonGrid {...buttonGridProps} />
       </motion.div>
     </div>
   );
-};
+});
+
+Calculator.displayName = 'Calculator';
